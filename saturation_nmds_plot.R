@@ -83,8 +83,8 @@ nmds = metaMDS(df1, distance = "bray", autotransform = FALSE)
 #nmds #below 0.2 is generally good 
 #plot(nmds) #circles are samples, starts are votus
 
-data.scores = as.data.frame(scores(nmds))
-#data.scores = as.data.frame((scores(nmds)$sites)) #problem line
+#data.scores = as.data.frame(scores(nmds))
+data.scores = as.data.frame((scores(nmds)$sites)) #problem line
 
 data.scores$Sample = samples
 height_list = c()

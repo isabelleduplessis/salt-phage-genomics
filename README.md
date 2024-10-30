@@ -2,7 +2,7 @@
 
 The goal of this research project is to characterize the viral populations found in S. alterniflora plants and surrounding soil in a salt marsh wetland environment. 
 
-# Files
+## Files
 
 host_taxonomy/genera: Contains lists of microbial host genera known to possess biogeochemical properties in iron oxidaztion, nitrification, sulfate reduction, and sulfur oxidation.
 
