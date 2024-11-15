@@ -3,6 +3,7 @@
 # R version 4.3.2 (2023-10-31)
 
 require(dplyr)
+require(reshape2)
 
 #### Load Data
 path = getwd() # Set path
@@ -124,8 +125,6 @@ for (i in 1:nrow(finaldf)){
 }
 
 
-observed_counts = m
-
 #      Tall Short Both
 #Bulk   15   59    5
 #Endo   59  230   22
@@ -136,4 +135,68 @@ observed_counts = m
 #BRE    1   22    2
 
 # Totals won't add up to 769 because some vOTUs are repeated
+
+# Next calculate totals
+observations = data.frame(m)
+observations = rbind(observations, colSums(observations))
+observations = cbind(observations, X4 = rowSums(observations))
+
+# Keep only totals
+expectations = data.frame(matrix(0,nrow = 8, ncol = 4)) # Initialize empty data frame
+expectations$X4 = observations$X4 # Get row sums
+expectations[8,] = observations[8,] # Get col sums
+
+# Calculate expected values
+rownum = nrow(expectations)
+colnum = ncol(expectations)
+
+for (i in 1:(rownum-1)) {
+  for (j in 1:(colnum-1)){
+    expectations[i,j] = round((expectations[i,colnum])*(expectations[rownum, j])/(expectations[rownum,colnum]))
+  }
+}
+
+# Q for Marian - Should I round since they aren't whole values or keep for statistical tests
+
+rows = c("Bulk sediment", "Endosphere","Rhizosphere","Bulk/Rhizo","Bulk/Endo","Rhizo/Endo","Bulk/Endo/Rhizo","Total")
+cols = c("Tall", "Short", "Both", "Total")
+
+rownames(observations) = rows
+colnames(observations) = cols
+rownames(expectations) = rows
+colnames(expectations) = cols
+
+### CHI SQUARED TEST
+  # Q - why do we say none are present in root/bulk in figure when there is one?
+  # Q - should I still keep compartment separated in the 7 categories for this, or the 3?
+
+# Organize values into expected/observed table
+melted_obs = melt(as.matrix(observations[1:7,1:3]))
+melted_exp = melt(as.matrix(expectations[1:7,1:3]))
+my_table = cbind(melted_obs, melted_exp$value)
+colnames(my_table) = c("Compartment", "Phenotype", "Observed", "Expected")
+
+# Things we need to test
+# 1. Proportion of Short vs tall for those found in one phenotype (keep only rows where phenotype is not both)
+# 2. Proportion of bulk, root, rhizo for those found in one compartment (keep only rows where compartment is singular)
+# 3. Proportion of bulk/rhizo and root/rhizo for those found in two compartments (keep only rows where compartment is double)
+
+# 1
+sub_table = my_table[(my_table$Phenotype != "Both"),]
+chisq.test(sub_table$Observed, sub_table$Expected)
+# Result: X-squared = 154, df = 143, p-value = 0.2503
+
+# 2
+sub_table = rbind(my_table[(my_table$Compartment == "Bulk sediment"),], my_table[(my_table$Compartment == "Rhizosphere"),], my_table[(my_table$Compartment == "Endosphere"),])
+chisq.test(sub_table$Observed, sub_table$Expected)
+# Result: X-squared = 63, df = 56, p-value = 0.2425
+
+# 3
+sub_table = rbind(my_table[(my_table$Compartment == "Bulk/Rhizo"),], my_table[(my_table$Compartment == "Bulk/Endo"),], my_table[(my_table$Compartment == "Rhizo/Endo"),])
+chisq.test(sub_table$Observed, sub_table$Expected)
+# Result: X-squared = 63, df = 49, p-value = 0.08625
+
+
+# Warning for all of them: Chi-squared approximation may be incorrect
+
 
