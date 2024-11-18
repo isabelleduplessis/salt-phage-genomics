@@ -23,8 +23,21 @@ metadata = metadata[order(metadata$Sample_ID),]
 votus_cov75thres = read.delim(paste0(path,"/intermediate_files/votus_cov75thres.txt"), header=FALSE, comment.char="#")
 colnames(votus_cov75thres) = c("sample","votus","coverage","meandepth","rpkm")
 
+
+### Get TPM from RPKM to normalize
+votus_cov75thres$tpm = 0 # Initialize tpm column
+# Formula: TPM = (((mean transcript length in kilobases) x RPKM) / sum(RPKM all genes)) * 10^6
+# We have paired end reads
+for (i in 1:nrow(votus_cov75thres)){
+  rpkm = votus_cov75thres[i,5]
+  sum_rpkm = sum(votus_cov75thres$rpkm)
+  tpm = rpkm/sum_rpkm*10^6
+  votus_cov75thres[i,6] = tpm
+}
+
+
 ##############################################
-## Cumulative vOTUs / Saturation Plot
+## Cumulative vOTUs / Saturation Plot - no need to edit
 perms = 100
 le_tmp = table(votus_cov75thres[,1:2])
 
@@ -60,10 +73,12 @@ saturation = ggplot(df_mean,aes(sample, means)) +
 
 
 ### NMDS
+# Looks the same when udpated with tpm
 sample = votus_cov75thres$sample
 votu = votus_cov75thres$votus
-rpkm = votus_cov75thres$rpkm
-newdf2 = data.frame(sample,votu,rpkm)
+# rpkm = votus_cov75thres$rpkm
+tpm = votus_cov75thres$tpm
+newdf2 = data.frame(sample,votu,tpm)
 
 votu = unique(newdf2$votu)
 samples = sort(unique(newdf2$sample)) 

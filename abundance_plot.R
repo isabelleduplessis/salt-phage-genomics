@@ -25,28 +25,41 @@ metadata = metadata[order(metadata$Sample_ID),]
 votus_cov75thres = read.delim(paste0(path,"/intermediate_files/votus_cov75thres.txt"), header=FALSE, comment.char="#")
 colnames(votus_cov75thres) = c("sample","votus","coverage","meandepth","rpkm")
 
+### Get TPM from RPKM to normalize
+votus_cov75thres$tpm = 0 # Initialize tpm column
+# Formula: TPM = (((mean transcript length in kilobases) x RPKM) / sum(RPKM all genes)) * 10^6
+# We have paired end reads
+for (i in 1:nrow(votus_cov75thres)){
+  rpkm = votus_cov75thres[i,5]
+  sum_rpkm = sum(votus_cov75thres$rpkm)
+  tpm = rpkm/sum_rpkm*10^6
+  votus_cov75thres[i,6] = tpm
+}
+
 # load qPCR data
 qPCR_data = read.csv(paste0(path, "/intermediate_files/qPCR_data.csv"))
 
 
 ##############################################
 ## Viral Abundance, total RPKM per sample, grouped by metadata
+# Edited to use TPM
+# Q - Does it make sense to add up all the TPMs for this? Because TPM already involves sum of RPKM and all TPMs add up to 10^6
 
-tmp = as.numeric(as.character(votus_cov75thres$rpkm))
+tmp = as.numeric(as.character(votus_cov75thres$tpm))
 tmp = aggregate(tmp,list(sample=votus_cov75thres$sample),sum)
-colnames(tmp)=c("sample","rpkm")
+colnames(tmp)=c("sample","tpm")
 tmp = cbind(tmp, metadata[,2:5])
 tmp$Compartment = factor(tmp$Compartment,levels = c("Bulk sediment","Rhizosphere","Endosphere"))
 
-viral_abundance = ggplot(data=tmp,aes(Compartment,rpkm,color=Compartment,group=Spartina)) +
+viral_abundance = ggplot(data=tmp,aes(Compartment,tpm,color=Compartment,group=Spartina)) +
   geom_point(aes(shape = Spartina), size=2.5, position = position_dodge(width = .9)) +
   theme_test() + 
-  stat_summary(fun = mean, geom = "tile", color = "black", height = ((max(tmp$rpkm)-min(tmp$rpkm))*.003), width = .8, position = position_dodge(width = .9)) +
+  stat_summary(fun = mean, geom = "tile", color = "black", height = ((max(tmp$tpm)-min(tmp$tpm))*.003), width = .8, position = position_dodge(width = .9)) +
   scale_color_manual(values = c("Bulk sediment" = "#853512",
                                 "Endosphere" = "#558A78",
                                 "Rhizosphere" = "#EEAA23"), labels = c("Bulk Sediment", "Rhizsophere", "Root")) +
   scale_x_discrete(NULL, labels = c("Bulk Sediment", "Rhizsophere", "Root")) +
-  ylab("Total Viral RPKM") +
+  ylab("Total Viral TPKM") +
   theme(text = element_text(size = 15)) +
   theme(legend.position = "none") +
   theme(plot.margin = unit(c(15, 15, 30, 15),"pt")) +
@@ -98,11 +111,84 @@ prok_abundance = ggplot(abundance, aes(x=Compartment, y=Log.Copies, color = Comp
   theme(plot.margin = unit(c(5.5, 15, 30, 15),"pt")) +
   ggtitle("Prokaryotic Abundance") + theme(plot.title = element_text(face = "bold", size = 15, hjust = .5))
 
+###################################
+## Rank order with TPM
+my_table = votus_cov75thres[,c(1,2,6)]
+my_table$Compartment = 0
+my_table$Phenotype = 0
 
+# for each votu, find compartment and phenotype based on sample number
+for(i in 1:nrow(my_table)){
+  my_table$Compartment[i]=metadata$Compartment[parse_number(my_table$sample[i])==parse_number(metadata$Sample_ID)]
+  my_table$Phenotype[i]=metadata$Spartina[parse_number(my_table$sample[i])==parse_number(metadata$Sample_ID)]
+  if(my_table$Compartment[i]=="Bulk sediment"){
+    my_table$Compartment[i]="Bulk"
+  }
+}
+
+
+my_table = my_table[,c(2,3,4,5)]
+
+
+rowzero = data.frame(matrix(ncol = 4, nrow = 1))
+colnames(rowzero) = c("order", "tpm", "Compartment", "Phenotype")
+
+# create a dataframe for each Compartment/Phenotype combination
+for(i in c("Bulk", "Rhizosphere", "Endosphere")){
+  for(j in c("Tall", "Short")){
+    nam <- paste(i,j, sep="")
+    my_table2 = my_table[which(my_table$Compartment == i),]
+    my_table2 = my_table2[which(my_table2$Phenotype==j),]
+    
+    # Set rpkm to the sum of each set of replicates
+    for(votu in unique(my_table2$votus)){
+      indices = which(my_table2$votus == votu)
+      tmp_sum = sum(my_table2[indices,2])
+      my_table2[which(my_table2$votus == votu),]$tpm = tmp_sum
+    }
+    
+    # Get unique rows
+    my_table2 = unique(my_table2)
+    
+    my_table2 = my_table2[order(my_table2$tpm,decreasing = T),] # order rpkms
+    tmpdf = data.frame(1:nrow(my_table2), cumsum(my_table2$tpm)) # get cumulative sum of rpkms and assign order number
+    colnames(tmpdf) = c("order","tpm")
+    tmpdf$Compartment=rep(i, nrow(tmpdf)) # add compartment column
+    tmpdf$Phenotype=rep(j, nrow(tmpdf)) # add phenotype column
+    tmpdf$tpm=tmpdf$tpm/max(tmpdf$tpm) # make tpm [0,1]
+    for(k in 1:nrow(tmpdf)){
+      tmpdf$order[k]=tmpdf$order[k]/max(tmpdf$order) # make order [0,1]
+    }
+    
+    rowzero$order = 0
+    rowzero$tpm = 0
+    rowzero$Compartment = i
+    rowzero$Phenotype = j
+    tmpdf2 = rbind(rowzero,tmpdf)
+    assign(nam, tmpdf2)
+  }
+}
+
+# combine df for each combination for plotting
+totaldf = rbind(BulkTall, BulkShort, RhizosphereShort, RhizosphereTall, EndosphereShort, EndosphereTall)
+
+rank_order_plot = ggplot(totaldf,aes(order,tpm,group = interaction(Compartment, Phenotype), color = Compartment, linetype = Phenotype, label = )) + 
+  geom_line(linewidth = .7) +
+  scale_linetype_manual(values = c("Tall" = "solid", "Short" = "dashed")) +
+  theme_test() +
+  scale_color_manual(values = c("Bulk" = "#853512",
+                                "Endosphere" = "#558A78",
+                                "Rhizosphere" = "#EEAA23"), limits = c("Bulk", "Rhizosphere", "Endosphere"), labels = c("Bulk Sediment", "Rhizosphere", "Root")) +
+  ylab("Relative Cumulative Abundance") + xlab("Proportion vOTU Rank") +
+  theme(text = element_text(size = 15)) +
+  theme(legend.box = "horizontal") + labs(color = NULL, linetype = NULL) +
+  theme(legend.position = "left") + theme(plot.margin = unit(c(7.5, 5.5, 12, 5.5),"pt")) +
+  ggtitle("vOTU Rank Order") + theme(plot.title = element_text(face = "bold", size = 15, hjust = .5))
 
 
 ##############################################
-# Rank order 
+# Rank order with RPKM
+
 
 my_table = votus_cov75thres[,c(1,2,5)]
 my_table$Compartment = 0
@@ -128,9 +214,6 @@ colnames(rowzero) = c("order", "rpkm", "Compartment", "Phenotype")
 for(i in c("Bulk", "Rhizosphere", "Endosphere")){
   for(j in c("Tall", "Short")){
     nam <- paste(i,j, sep="")
-    
-    
-    
     my_table2 = my_table[which(my_table$Compartment == i),]
     my_table2 = my_table2[which(my_table2$Phenotype==j),]
     
