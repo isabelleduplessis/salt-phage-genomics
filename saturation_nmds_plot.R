@@ -1,4 +1,4 @@
-# Code by: Isabelle Du Plessis, 2023 and Marian Dominguez-Mirazo, 2023
+# Code by: Isabelle Du Plessis, 2024 and Marian Dominguez-Mirazo, 2023
 
 require(ggplot2) # version 3.4.2
 require(reshape2) # version 1.4.4

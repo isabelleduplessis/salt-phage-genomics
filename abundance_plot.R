@@ -143,7 +143,7 @@ for(i in c("Bulk", "Rhizosphere", "Endosphere")){
     # Set rpkm to the sum of each set of replicates
     for(votu in unique(my_table2$votus)){
       indices = which(my_table2$votus == votu)
-      tmp_sum = sum(my_table2[indices,2])
+      tmp_sum = my_table2[indices,2] # changed this to not sum
       my_table2[which(my_table2$votus == votu),]$tpm = tmp_sum
     }
     
