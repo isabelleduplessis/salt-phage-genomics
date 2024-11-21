@@ -84,6 +84,7 @@ for (i in unique(df$votus)){
   }
 }
 
+
 # Matrix looks like this
 #      Tall Short Both
 # Bulk  0   0     0
@@ -166,7 +167,40 @@ colnames(observations) = cols
 rownames(expectations) = rows
 colnames(expectations) = cols
 
-### CHI SQUARED TEST
+####
+# FIX chi sq - didn't need to calculate expected
+
+# 1. Proportion of Short vs tall for those found in one phenotype (keep only rows where phenotype is not both)
+subobs1 = observations[1:7,1:2]
+chisq.test(subobs1)
+# X-squared = 18.904, df = 6, p-value = 0.004329
+
+# 2. Proportion of bulk, root, rhizo for those found in one compartment (keep only rows where compartment is singular)
+subobs2 = observations[1:3,1:3]
+chisq.test(subobs2)
+# X-squared = 7.6226, df = 4, p-value = 0.1064
+
+# 3. Proportion of bulk/rhizo and root/rhizo for those found in two compartments (keep only rows where compartment is double)
+subobs3 = observations[4:6,1:3]
+chisq.test(subobs3)
+
+# 4.    Tall Short - not sure if this works because the 2Ps are equal
+#   1P  131   616 
+#   2P  62    62
+subobs4 = colSums(subobs1)
+subobs4 = rbind(subobs4, rep(observations[8,3],2))
+rownames(subobs4) = c("1 Phenotype", "2 Phenotypes")
+chisq.test(subobs4)
+# X-squared = 63.108, df = 1, p-value = 1.957e-15
+
+# 5. Compartment x number of compartments
+subobs5 = data.frame("1 Compartment" = c(79,92,311), "2 Compartments" = c(59+1, 59+242, 1+242), "3 Compartments" = c(25,25,25))
+colnames(subobs5) = c("1 Compartment", "2 Compartments", "3 Compartments")
+rownames(subobs5) = c("Bulk Sediment", "Rhizosphere", "Endosphere")
+chisq.test(subobs5)
+# X-squared = 135.52, df = 4, p-value < 2.2e-16
+
+### CHI SQUARED TEST - don't use this
   # Q - why do we say none are present in root/bulk in figure when there is one?
   # Q - should I still keep compartment separated in the 7 categories for this, or the 3?
 
