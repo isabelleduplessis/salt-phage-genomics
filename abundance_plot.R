@@ -268,19 +268,20 @@ rank_order_plot = ggplot(totaldf,aes(order,rpkm,group = interaction(Compartment,
 
 fig3a = grid.arrange(votu_graph + theme(legend.position = "none"), top = grid::textGrob("a", gp=gpar(fontsize=12,font=2), x = 0, hjust = 0))
 
-fig3b = grid.arrange(viral_abundance + theme(legend.position = "none"), top = grid::textGrob("b", gp=gpar(fontsize=12,font=2), x = 0, hjust = 0))
+# no longer using
+#fig3b = grid.arrange(viral_abundance + theme(legend.position = "none"), top = grid::textGrob("b", gp=gpar(fontsize=12,font=2), x = 0, hjust = 0))
 
 
-fig3c = grid.arrange((rank_order_plot + theme(legend.position = "none")), top = textGrob("c", gp=gpar(fontsize=12,font=2), x = 0, hjust = 0))
-fig3d = grid.arrange(prok_abundance, top = textGrob("d", gp=gpar(fontsize=12,font=2), x = 0, hjust = 0))
+fig3c = grid.arrange((rank_order_plot + theme(legend.position = "none")), top = textGrob("b", gp=gpar(fontsize=12,font=2), x = 0, hjust = 0))
 
-fig3cd <- grid.arrange(fig3c, fig3d, nrow = 1)
+
+# no longer using fig3d = grid.arrange(prok_abundance, top = textGrob("d", gp=gpar(fontsize=12,font=2), x = 0, hjust = 0))
+
+# no longer using fig3cd <- grid.arrange(fig3c, fig3d, nrow = 1)
 
 dot_legend <- get_legend(votu_graph)
 line_legend <- get_legend(rank_order_plot)
 
 
-grid.arrange(fig3a, fig3b, fig3cd, dot_legend, line_legend,
-             layout_matrix= rbind(c(1,2), c(3, 3), c(5,4)), 
-             heights = c(3,3,1), widths = c(1,1))
+grid.arrange(fig3a, fig3c, dot_legend, line_legend, heights = c(4,1), widths = c(1,1))
 
