@@ -26,6 +26,8 @@ colnames(votus_cov75thres) = c("sample","votus","coverage","meandepth","rpkm")
 
 ### Get TPM from RPKM to normalize
 votus_cov75thres$tpm = 0 # Initialize tpm column
+votus_cov75thres$Compartment = 0
+votus_cov75thres$Phenotype = 0
 # Formula: TPM = (((mean transcript length in kilobases) x RPKM) / sum(RPKM all genes)) * 10^6
 # We have paired end reads
 for (i in 1:nrow(votus_cov75thres)){
@@ -33,6 +35,8 @@ for (i in 1:nrow(votus_cov75thres)){
   sum_rpkm = sum(votus_cov75thres$rpkm)
   tpm = rpkm/sum_rpkm*10^6
   votus_cov75thres[i,6] = tpm
+  votus_cov75thres[i,7] = metadata$Compartment[metadata$Sample_ID==votus_cov75thres[i,1]]
+  votus_cov75thres[i,8] = metadata$Spartina[metadata$Sample_ID==votus_cov75thres[i,1]]
 }
 
 
@@ -94,12 +98,28 @@ for(r in 1:nrow(newdf2)){
 df1[is.na(df1)] = 0   #convert NA's to 0
 #df2 = as.data.frame(df1)
 
+
+
+######### PERMANOVA
+data.scores$CompPhen = paste(data.scores$Compartment, data.scores$Height)
+
+perm_dist = vegdist(df1, method = "bray")
+
+dispersion = betadisper(perm_dist, group = data.scores$CompPhen, type = "centroid")
+plot(dispersion)
+anova(dispersion) # Significant dispersion, not recommended for PERMANOVA
+
+perma_result = adonis2(perm_dist ~ as.factor(data.scores$CompPhen), data = perm_dist, permutations = 9999)
+
+
+##########
+
 nmds = metaMDS(df1, distance = "bray", autotransform = FALSE)
 #nmds #below 0.2 is generally good 
 #plot(nmds) #circles are samples, starts are votus
 
 #data.scores = as.data.frame(scores(nmds))
-data.scores = as.data.frame((scores(nmds)$sites)) #problem line
+data.scores = as.data.frame((scores(nmds)$sites)) 
 
 data.scores$Sample = samples
 height_list = c()
