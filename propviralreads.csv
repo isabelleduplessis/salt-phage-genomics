@@ -1,0 +1,25 @@
+sample,propviral,Compartment,Phenotype
+sample_1,0.001537377,Bulk sediment,Tall
+sample_10,0.002200495,Bulk sediment,Short
+sample_11,0.004016059,Rhizosphere,Short
+sample_12,0.006863551,Endosphere,Short
+sample_13,0.001632688,Bulk sediment,Tall
+sample_14,0.002846299,Rhizosphere,Tall
+sample_15,0.01095906,Endosphere,Tall
+sample_16,0.002673059,Bulk sediment,Short
+sample_17,0.006524845,Rhizosphere,Short
+sample_18,0.007621585,Endosphere,Short
+sample_19,0.001535722,Bulk sediment,Tall
+sample_2,0.001641169,Rhizosphere,Tall
+sample_20,0.002253406,Rhizosphere,Tall
+sample_21,0.004647521,Endosphere,Tall
+sample_22,0.002176176,Bulk sediment,Short
+sample_23,0.00344117,Rhizosphere,Short
+sample_24,0.006961697,Endosphere,Short
+sample_3,0.007495312,Endosphere,Tall
+sample_4,0.001394519,Bulk sediment,Short
+sample_5,0.003979897,Rhizosphere,Short
+sample_6,0.00583459,Endosphere,Short
+sample_7,0.002187216,Bulk sediment,Tall
+sample_8,0.002251586,Rhizosphere,Tall
+sample_9,0.006018073,Endosphere,Tall
